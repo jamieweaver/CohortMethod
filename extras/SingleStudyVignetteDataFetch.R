@@ -1,6 +1,6 @@
 # @file SingleStudyVignetteDataFetch.R
 #
-# Copyright 2018 Observational Health Data Sciences and Informatics
+# Copyright 2019 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -22,6 +22,7 @@ library(DatabaseConnector)
 library(CohortMethod)
 options(fftempdir = "s:/fftemp")
 
+# Synpuf on Postgres
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "postgresql",
                                                                 server = "localhost/ohdsi",
                                                                 user = "postgres",
@@ -31,6 +32,18 @@ resultsDatabaseSchema <- "scratch"
 cdmVersion <- "5"
 extraSettings <- NULL
 
+# Synpuf on PDW
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
+                                                                server = Sys.getenv("PDW_SERVER"),
+                                                                user = NULL,
+                                                                password = NULL,
+                                                                port = Sys.getenv("PDW_PORT"))
+cdmDatabaseSchema <- "cdm_synpuf_v667.dbo"
+resultsDatabaseSchema <- "scratch.dbo"
+cdmVersion <- "5"
+extraSettings <- NULL
+
+# MDCD on PDW
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
                                                                 server = Sys.getenv("PDW_SERVER"),
                                                                 user = NULL,
@@ -40,6 +53,16 @@ cdmDatabaseSchema <- "cdm_truven_mdcd_v610.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
 cdmVersion <- "5"
 extraSettings <- NULL
+
+# Eunomia
+connectionDetails <- Eunomia::getEunomiaConnectionDetails()
+cdmDatabaseSchema <- "main"
+resultsDatabaseSchema <- "main"
+oracleTempSchema <- NULL
+extraSettings <- NULL
+cdmVersion <- "5"
+
+
 
 connection <- DatabaseConnector::connect(connectionDetails)
 sql <- loadRenderTranslateSql("coxibVsNonselVsGiBleed.sql",
@@ -57,7 +80,7 @@ DatabaseConnector::querySql(connection, sql)
 
 DatabaseConnector::disconnect(connection)
 
-nsaids <- 21603933
+nsaids <- c(1118084, 1124300)
 
 covSettings <- createDefaultCovariateSettings(excludedCovariateConceptIds = nsaids,
                                               addDescendantsToExclude = TRUE)
@@ -83,7 +106,7 @@ cohortMethodData <- getDbCohortMethodData(connectionDetails = connectionDetails,
                                           washoutPeriod = 180,
                                           covariateSettings = covSettings)
 
-saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodData")
+saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataSynpuf")
 saveCohortMethodData(cohortMethodData, "s:/temp/cohortMethodVignette/cohortMethodDataComp", compress = TRUE)
 
 # cohortMethodData <- loadCohortMethodData('s:/temp/cohortMethodVignette/cohortMethodData')
@@ -98,9 +121,23 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   removeSubjectsWithPriorOutcome = TRUE,
                                   minDaysAtRisk = 1,
                                   riskWindowStart = 0,
+                                  startAnchor = "cohort start",
+                                  riskWindowEnd = 30,
+                                  endAnchor = "cohort end")
+
+plotTimeToEvent(cohortMethodData = cohortMethodData,
+                                  outcomeId = 3,
+                                  firstExposureOnly = FALSE,
+                                  washoutPeriod = 0,
+                                  removeDuplicateSubjects = FALSE,
+                                  minDaysAtRisk = 1,
+                                  riskWindowStart = 0,
                                   addExposureDaysToStart = FALSE,
                                   riskWindowEnd = 30,
                                   addExposureDaysToEnd = TRUE)
+
+
+
 # getAttritionTable(studyPop)
 
 saveRDS(studyPop, "s:/temp/cohortMethodVignette/studyPop.rds")
@@ -141,7 +178,7 @@ ps <- createPs(cohortMethodData = cohortMethodData,
 plotPs(ps)
 
 # computePsAuc(ps) plotPs(ps)
-saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps.rds")
+saveRDS(ps, file = "s:/temp/cohortMethodVignette/psSynpuf.rds")
 saveRDS(ps, file = "s:/temp/cohortMethodVignette/ps32.rds")
 ps32 <- ps
 ps64 <- readRDS('s:/temp/cohortMethodVignette/ps.rds')

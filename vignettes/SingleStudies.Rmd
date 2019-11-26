@@ -255,12 +255,12 @@ studyPop <- createStudyPopulation(cohortMethodData = cohortMethodData,
                                   removeSubjectsWithPriorOutcome = TRUE,
                                   minDaysAtRisk = 1,
                                   riskWindowStart = 0,
-                                  addExposureDaysToStart = FALSE,
+                                  startAnchor = "cohort start",
                                   riskWindowEnd = 30,
-                                  addExposureDaysToEnd = TRUE)
+                                  endAnchor = "cohort end")
 ```
 
-Note that we've set `firstExposureOnly` and `removeDuplicateSubjects` to FALSE, and `washoutPeriod` to zero because we already filtered on these arguments when using the `getDbCohortMethodData` function. During loading we set `restrictToCommonPeriod` to FALSE, and we do the same here because we do not want to force the comparison to restrict only to time when both drugs are recorded. We specify the outcome ID we will use, and that people with outcomes prior to the risk window start date will be removed. The risk window is defined as starting at the index date (`riskWindowStart = 0` and `addExposureDaysToStart = FALSE`), and the risk windows ends 30 days after exposure ends (`riskWindowEnd = 30` and `addExposureDaysToEnd = TRUE`). Note that the risk windows are truncated at the end of observation or the study end date. We also remove subjects who have no time at risk. To see how many people are left in the study population we can always use the `getAttritionTable` function:
+Note that we've set `firstExposureOnly` and `removeDuplicateSubjects` to FALSE, and `washoutPeriod` to zero because we already filtered on these arguments when using the `getDbCohortMethodData` function. During loading we set `restrictToCommonPeriod` to FALSE, and we do the same here because we do not want to force the comparison to restrict only to time when both drugs are recorded. We specify the outcome ID we will use, and that people with outcomes prior to the risk window start date will be removed. The risk window is defined as starting at the cohort start date (the index date, `riskWindowStart = 0` and `startAnchor = "cohort start"`), and the risk windows ends 30 days after the cohort ends (`riskWindowEnd = 30` and `endAnchor = "cohort end"`). Note that the risk windows are truncated at the end of observation or the study end date. We also remove subjects who have no time at risk. To see how many people are left in the study population we can always use the `getAttritionTable` function:
 
 ```{r tidy=TRUE,eval=FALSE}
 getAttritionTable(studyPop)
@@ -718,6 +718,41 @@ if (file.exists("s:/temp/cohortMethodVignette/ps.rds")) {
 ```
 
 Note that the Kaplan-Meier plot will automatically adjust for any stratification, matching, or trimming that may have been applied.
+
+## Time-to-event plot
+
+We can also plot time-to-event, showing both events before and after the index date, and events during and outside the defined time-at-risk window. This plot can provide insight into the temporal pattern of the outcome relative to the exposures:
+
+```{r tidy=TRUE,eval=FALSE}
+plotTimeToEvent(cohortMethodData = cohortMethodData,
+                outcomeId = 3,
+                firstExposureOnly = FALSE,
+                washoutPeriod = 0,
+                removeDuplicateSubjects = FALSE,
+                minDaysAtRisk = 1,
+                riskWindowStart = 0,
+                startAnchor = "cohort start",
+                riskWindowEnd = 30,
+                endAnchor = "cohort end")
+
+```
+```{r echo=FALSE, message=FALSE, results='hide'}
+if (file.exists("s:/temp/cohortMethodVignette/cohortMethodData")) {
+  plotTimeToEvent(cohortMethodData = cohortMethodData,
+                  outcomeId = 3,
+                  firstExposureOnly = FALSE,
+                  washoutPeriod = 0,
+                  removeDuplicateSubjects = FALSE,
+                  minDaysAtRisk = 1,
+                  riskWindowStart = 0,
+                  startAnchor = "cohort start",
+                  riskWindowEnd = 30,
+                  endAnchor = "cohort end")
+  
+}
+```
+
+Note that this plot does not show any adjustment for the propensity score.
 
 # Acknowledgments
 

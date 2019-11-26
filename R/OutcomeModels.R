@@ -1,6 +1,6 @@
 # @file CohortMethod.R
 #
-# Copyright 2018 Observational Health Data Sciences and Informatics
+# Copyright 2019 Observational Health Data Sciences and Informatics
 #
 # This file is part of CohortMethod
 #
@@ -60,6 +60,7 @@ fitOutcomeModel <- function(population,
                             includeCovariateIds = c(),
                             prior = createPrior("laplace", useCrossValidation = TRUE),
                             control = createControl(cvType = "auto",
+                                                    seed = 1,
                                                     startingVariance = 0.01,
                                                     tolerance = 2e-07,
                                                     cvRepetitions = 10,
